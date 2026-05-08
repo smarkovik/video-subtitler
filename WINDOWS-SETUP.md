@@ -4,6 +4,8 @@ Hi 👋 — follow every step in order. Don't skip ahead. If anything on
 your screen doesn't match what's described here, **stop and screenshot
 the window for Tancho** before continuing.
 
+> 🇷🇸 Српска верзија: [windows-setup.serbian.md](windows-setup.serbian.md)
+
 You'll need:
 
 - A laptop with Windows 10 or Windows 11.
