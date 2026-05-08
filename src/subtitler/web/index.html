@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>video-subtitler</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header>
+  <h1>video-<b>subtitler</b></h1>
+  <div class="sub">offline Serbian subtitles · runs locally on your machine</div>
+</header>
+
+<main>
+
+  <section id="stage-upload" class="stage active">
+    <label id="drop">
+      <input type="file" id="file" accept="video/*,.mov,.mp4,.mkv,.avi,.webm">
+      <div class="big">Drop a video here</div>
+      <div class="small">or click to choose · .mp4 .mov .mkv .avi .webm</div>
+    </label>
+  </section>
+
+  <section id="stage-transcribe" class="stage">
+    <div class="status" id="status1">Uploading...</div>
+    <div class="log" id="log1"></div>
+  </section>
+
+  <section id="stage-edit" class="stage">
+    <div class="status">
+      Review the transcript. Fix any names, slang, or words the
+      computer misheard. The original word-level timing stays —
+      timestamps are locked.
+    </div>
+    <div id="segments"></div>
+    <div class="opts">
+      <label><input type="checkbox" id="opt-clean"> Strip filler words (<i>ovaj, znači, pa, ono, kao</i>)</label>
+    </div>
+    <div class="actions">
+      <button id="btn-render">Render video</button>
+      <button id="btn-restart" class="ghost">Start over</button>
+    </div>
+  </section>
+
+  <section id="stage-render" class="stage">
+    <div class="status" id="status2">Rendering...</div>
+    <div class="log" id="log2"></div>
+  </section>
+
+  <section id="stage-done" class="stage">
+    <div class="done-msg">Done.</div>
+    <div class="actions">
+      <a id="download" class="btn-link" href="">Download subtitled video</a>
+      <button id="btn-rerender" class="ghost">Edit transcript &amp; re-render</button>
+      <button id="btn-restart-2" class="ghost">Subtitle another video</button>
+    </div>
+  </section>
+
+  <section id="stage-error" class="stage">
+    <div class="status err">Something went wrong.</div>
+    <div class="log err-log" id="log-err"></div>
+    <div class="actions">
+      <button id="btn-restart-3" class="ghost">Start over</button>
+    </div>
+  </section>
+
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
