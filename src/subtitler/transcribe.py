@@ -31,14 +31,18 @@ def transcribe(
     model_size: str = "medium",
     language: str = "sr",
     progress: bool = True,
+    on_segment=None,
 ) -> list[Segment]:
     """Run faster-whisper, return segments with word-level timestamps.
 
     int8 on CPU is the slowest-but-works path. The first call after a
     fresh install downloads the model to the HF cache; later calls are
     fully offline.
+
+    on_segment(segment) is called for each segment as soon as it's
+    decoded — used by the web UI to stream live progress to the
+    browser. The CLI uses progress=True to print the same info.
     """
-    # Imported lazily so audio extraction works without faster-whisper.
     from faster_whisper import WhisperModel
 
     model = WhisperModel(model_size, device="cpu", compute_type="int8")
@@ -57,14 +61,15 @@ def transcribe(
             for w in (seg.words or [])
             if w.start is not None and w.end is not None
         ]
-        out.append(
-            Segment(
-                start=seg.start,
-                end=seg.end,
-                text=seg.text.strip(),
-                words=words,
-            )
+        segment = Segment(
+            start=seg.start,
+            end=seg.end,
+            text=seg.text.strip(),
+            words=words,
         )
+        out.append(segment)
+        if on_segment is not None:
+            on_segment(segment)
         if progress:
             mins = int(seg.end // 60)
             secs = int(seg.end % 60)

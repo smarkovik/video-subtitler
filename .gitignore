@@ -29,6 +29,7 @@ videos/
 *.words.json
 out/
 output/
+.jobs/
 
 # OS / editor
 .DS_Store
