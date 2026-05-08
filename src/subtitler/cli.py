@@ -19,11 +19,11 @@ import argparse
 import sys
 from pathlib import Path
 
-from .audio import extract_audio, FFmpegMissing, FFmpegFailed
+from .audio import extract_audio, probe_dimensions, FFmpegMissing, FFmpegFailed
 from .transcribe import transcribe
 from .srt import write_srt, read_srt
 from .store import write_words_json, read_words_json
-from .ass import write_ass
+from .ass import write_ass, Style
 from .burn import burn
 from .realign import realign
 
@@ -89,8 +89,14 @@ def _stage_render(video: Path, cyrillic: bool, clean: bool) -> int:
         segments = latin_to_cyrillic_segments(segments)
         print("      transliterated to Cyrillic")
 
-    print(f"[2/3] Building ASS -> {p['ass'].name}")
-    write_ass(segments, p["ass"])
+    width, height = probe_dimensions(video)
+    style = Style.for_video(width, height)
+    print(
+        f"[2/3] Building ASS -> {p['ass'].name} "
+        f"({width}x{height}, font={style.font_size}px, "
+        f"{style.max_words_per_line} words/line)"
+    )
+    write_ass(segments, p["ass"], style)
 
     print(f"[3/3] Burning into {p['out'].name} (this is the slow part)")
     try:

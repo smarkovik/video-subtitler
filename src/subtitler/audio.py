@@ -24,6 +24,25 @@ def ensure_ffmpeg() -> str:
     return path
 
 
+def probe_dimensions(video: Path) -> tuple[int, int]:
+    """Return (width, height) of the first video stream via ffprobe."""
+    ensure_ffmpeg()
+    cmd = [
+        "ffprobe", "-v", "error",
+        "-select_streams", "v:0",
+        "-show_entries", "stream=width,height",
+        "-of", "csv=p=0:s=,",
+        str(video),
+    ]
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    if proc.returncode != 0 or "," not in proc.stdout:
+        raise FFmpegFailed(
+            f"ffprobe failed reading dimensions:\n{proc.stderr[-500:]}"
+        )
+    w, h = proc.stdout.strip().split(",", 1)
+    return int(w), int(h)
+
+
 def extract_audio(video: Path, out_wav: Path) -> Path:
     """Extract mono 16kHz PCM WAV. Whisper expects this format."""
     ensure_ffmpeg()
