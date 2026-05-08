@@ -76,13 +76,34 @@
           <span>Box opacity <em><span id="opt-opacity-label">50</span>%</em></span>
           <input type="range" id="opt-opacity" min="0" max="100" value="50">
         </label>
+
+        <label class="field">
+          <span>Position on screen</span>
+          <select id="opt-position">
+            <option value="bottom" selected>Bottom</option>
+            <option value="middle">Middle</option>
+            <option value="top">Top</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Strip mode</span>
+          <label class="check"><input type="checkbox" id="opt-fullstrip"> Full-width strip behind text</label>
+        </label>
+
+        <label class="field" id="field-radius">
+          <span>Strip corner radius <em><span id="opt-radius-label">12</span>px</em></span>
+          <input type="range" id="opt-radius" min="0" max="48" value="12">
+        </label>
       </div>
 
       <div id="preview-row">
         <div id="preview">
-          <span class="pw" id="pw1">Привет</span>
-          <span class="pw active" id="pw2">свет</span>
-          <span class="pw" id="pw3">данас</span>
+          <div id="preview-inner">
+            <span class="pw">Привет</span>
+            <span class="pw active">свет</span>
+            <span class="pw">данас</span>
+          </div>
         </div>
       </div>
     </details>

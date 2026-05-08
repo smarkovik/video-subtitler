@@ -1,17 +1,25 @@
 """Build an ASS subtitle file with word-by-word karaoke highlight.
 
-Approach: chunk each segment into short phrase-lines (max N words),
-and within each phrase use ASS \\k karaoke tags so the active word
-flips from secondary to primary colour as it's spoken.
+Two rendering modes, picked by Style.full_strip:
 
-Style is derived from the video's actual (width, height) so the same
-code looks right on horizontal 1080p, vertical Shorts, 4K, etc. The
-ASS PlayRes is set to the real video size, which means font sizes
-and margins are in literal pixels — no implicit scaling by the
-subtitles filter.
+  full_strip = False (default):
+      BorderStyle 3 — libass paints an opaque box behind every glyph
+      using BackColour. The "boxes hug the text" look.
 
-Font, colours, and the box opacity can be overridden by the caller
-(the web UI surfaces them as user controls).
+  full_strip = True:
+      BorderStyle 1 — outline + shadow only, no per-glyph box. We
+      emit an extra Dialogue per chunk on layer 0 that draws a
+      single rounded rectangle (ASS \\p1 path) spanning the screen
+      width, and the karaoke text rides on layer 1 over the top.
+
+Three positions (top / middle / bottom) map to ASS Alignment 8 / 5
+/ 2. In full-strip mode, both the strip and the text are positioned
+explicitly via \\pos so the text lands precisely centred on the
+strip regardless of margins.
+
+Style is derived from the video's actual (width, height); the ASS
+PlayRes matches the video, so all sizes are literal source pixels
+with no implicit scaling.
 """
 
 from __future__ import annotations
@@ -23,23 +31,24 @@ from .transcribe import Segment, Word
 
 
 # Timing constants — independent of resolution.
-MIN_DURATION = 0.4        # seconds; pad if shorter so it's readable
-FADE_MS = 150             # fade in at segment start, fade out at segment end
+MIN_DURATION = 0.4
+FADE_MS = 150
 
-# Defaults used by Style.for_video when the caller doesn't override.
+# Style defaults
 DEFAULT_FONT = "Arial"
-DEFAULT_HIGHLIGHT_HEX = "#FFEE00"  # active word: warm yellow
-DEFAULT_TEXT_HEX = "#FFFFFF"       # inactive: white
-DEFAULT_BOX_OPACITY = 50           # 0..100; 50 = half-transparent black box
+DEFAULT_HIGHLIGHT_HEX = "#FFEE00"
+DEFAULT_TEXT_HEX = "#FFFFFF"
+DEFAULT_BOX_OPACITY = 50
+DEFAULT_FULL_STRIP = False
+DEFAULT_RADIUS = 0
+DEFAULT_POSITION = "bottom"
+
+# Strip height as a multiple of font_size (~vertical padding).
+STRIP_HEIGHT_RATIO = 1.6
 
 
 def hex_to_ass(hex_color: str, alpha_pct: int = 100) -> str:
-    """Convert "#RRGGBB" + opacity-percent to an ASS &HAABBGGRR token.
-
-    ASS uses BGR (not RGB) and an inverted alpha (00 = opaque,
-    FF = invisible). alpha_pct is opacity in human terms — 100% is
-    fully visible, 0% is invisible.
-    """
+    """Convert "#RRGGBB" + opacity-percent to an ASS &HAABBGGRR token."""
     h = hex_color.lstrip("#")
     if len(h) != 6:
         raise ValueError(f"expected #RRGGBB, got {hex_color!r}")
@@ -49,13 +58,18 @@ def hex_to_ass(hex_color: str, alpha_pct: int = 100) -> str:
     return f"&H{aa}{bb.upper()}{gg.upper()}{rr.upper()}"
 
 
+def _split_back(ass_token: str) -> tuple[str, str]:
+    """Split &HAABBGGRR into (BBGGRR, AA) for use in inline overrides."""
+    h = ass_token.lstrip("&H").rstrip("&")
+    return h[2:], h[:2]
+
+
+def _alignment(position: str) -> int:
+    return {"top": 8, "middle": 5, "bottom": 2}.get(position, 2)
+
+
 @dataclass(frozen=True)
 class Style:
-    """Per-render values derived from the video's pixel dimensions and
-    the user's chosen font / colours / opacity. All sizes are in
-    literal pixels of the source video (we set ASS PlayRes to (width,
-    height), so 1 ASS unit == 1 video pixel).
-    """
     width: int
     height: int
     font_size: int
@@ -64,10 +78,13 @@ class Style:
     margin_side: int
     max_words_per_line: int
     font: str
-    primary_colour: str    # ASS &H token, used for the active word
-    secondary_colour: str  # ASS &H token, used for inactive words
-    outline_colour: str    # ASS &H token, around glyphs
-    back_colour: str       # ASS &H token; alpha controls box opacity
+    primary_colour: str
+    secondary_colour: str
+    outline_colour: str
+    back_colour: str
+    full_strip: bool
+    radius: int
+    position: str  # "top" | "middle" | "bottom"
 
     @classmethod
     def for_video(
@@ -79,19 +96,14 @@ class Style:
         highlight_hex: str = DEFAULT_HIGHLIGHT_HEX,
         text_hex: str = DEFAULT_TEXT_HEX,
         box_opacity: int = DEFAULT_BOX_OPACITY,
+        full_strip: bool = DEFAULT_FULL_STRIP,
+        radius: int = DEFAULT_RADIUS,
+        position: str = DEFAULT_POSITION,
     ) -> "Style":
-        # Font size: ~4.5% of the shorter dimension. Keeps Shorts (1080w)
-        # and horizontal 1080p (1080h) at the same readable size, and
-        # scales 4K up appropriately.
         short = min(width, height)
         font_size = max(20, round(short * 0.045))
-
-        # How many words fit horizontally. Empirical: an average
-        # Cyrillic/Latin word + space takes ~5x font_size in width.
-        # Cap at 6 to keep lines short for readability.
         usable_w = width * 0.92
         max_words = max(2, min(6, int(usable_w // (font_size * 5))))
-
         outline = max(2, round(font_size / 12))
         margin_v = max(20, round(height * 0.05))
         margin_side = max(20, round(width * 0.04))
@@ -109,8 +121,13 @@ class Style:
             secondary_colour=hex_to_ass(text_hex, 100),
             outline_colour=hex_to_ass("#000000", 100),
             back_colour=hex_to_ass("#000000", box_opacity),
+            full_strip=full_strip,
+            radius=max(0, int(radius)),
+            position=position if position in ("top", "middle", "bottom") else "bottom",
         )
 
+
+# ---- helpers ----------------------------------------------------------------
 
 def _fmt_time(t: float) -> str:
     if t < 0:
@@ -141,7 +158,47 @@ def _build_karaoke_text(words: list[Word]) -> str:
     return " ".join(parts)
 
 
+def _strip_rect(s: Style) -> tuple[int, int, int, int]:
+    """Return (left, top, w, h) of the full strip in source pixels."""
+    h = round(s.font_size * STRIP_HEIGHT_RATIO)
+    left = s.margin_side
+    w = s.width - 2 * s.margin_side
+    if s.position == "top":
+        top = s.margin_v
+    elif s.position == "middle":
+        top = (s.height - h) // 2
+    else:  # bottom
+        top = s.height - s.margin_v - h
+    return left, top, w, h
+
+
+def _rounded_rect_path(w: int, h: int, r: int) -> str:
+    """ASS \\p1 path for a rounded rectangle of size (w, h) with corner
+    radius r. r is clamped to half the shorter side."""
+    r = max(0, min(r, min(w, h) // 2))
+    if r == 0:
+        return f"m 0 0 l {w} 0 l {w} {h} l 0 {h} l 0 0"
+    return (
+        f"m {r} 0 "
+        f"l {w - r} 0 "
+        f"b {w} 0 {w} 0 {w} {r} "
+        f"l {w} {h - r} "
+        f"b {w} {h} {w} {h} {w - r} {h} "
+        f"l {r} {h} "
+        f"b 0 {h} 0 {h} 0 {h - r} "
+        f"l 0 {r} "
+        f"b 0 0 0 0 {r} 0"
+    )
+
+
+# ---- header -----------------------------------------------------------------
+
 def _header(s: Style) -> str:
+    border_style = 1 if s.full_strip else 3
+    align = _alignment(s.position)
+    # In full-strip mode the BackColour isn't drawn (BorderStyle 1),
+    # but the field is still required by ASS — leave it as configured
+    # so the file still round-trips cleanly through other tools.
     return f"""[Script Info]
 ScriptType: v4.00+
 PlayResX: {s.width}
@@ -151,37 +208,76 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,{s.font},{s.font_size},{s.primary_colour},{s.secondary_colour},{s.outline_colour},{s.back_colour},-1,0,0,0,100,100,0,0,3,{s.outline},0,2,{s.margin_side},{s.margin_side},{s.margin_v},1
+Style: Default,{s.font},{s.font_size},{s.primary_colour},{s.secondary_colour},{s.outline_colour},{s.back_colour},-1,0,0,0,100,100,0,0,{border_style},{s.outline},0,{align},{s.margin_side},{s.margin_side},{s.margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 
 
-def _event(
-    start: float,
-    end: float,
-    text: str,
-    fade_in: bool = False,
-    fade_out: bool = False,
-) -> str:
-    if fade_in or fade_out:
-        fi = FADE_MS if fade_in else 0
-        fo = FADE_MS if fade_out else 0
-        text = f"{{\\fad({fi},{fo})}}{text}"
-    return f"Dialogue: 0,{_fmt_time(start)},{_fmt_time(end)},Default,,0,0,0,,{text}"
+def _dialogue(layer: int, start: float, end: float, text: str) -> str:
+    return f"Dialogue: {layer},{_fmt_time(start)},{_fmt_time(end)},Default,,0,0,0,,{text}"
 
+
+def _fade_prefix(fade_in: bool, fade_out: bool) -> str:
+    if not (fade_in or fade_out):
+        return ""
+    fi = FADE_MS if fade_in else 0
+    fo = FADE_MS if fade_out else 0
+    return f"\\fad({fi},{fo})"
+
+
+# ---- per-mode event builders ------------------------------------------------
+
+def _word_box_text_event(
+    start: float, end: float, body: str, fade_in: bool, fade_out: bool
+) -> str:
+    """BorderStyle-3 word-box mode: just the karaoke text. The
+    per-glyph box comes from the Style's BackColour."""
+    fade = _fade_prefix(fade_in, fade_out)
+    text = f"{{{fade}}}{body}" if fade else body
+    return _dialogue(0, start, end, text)
+
+
+def _strip_events(
+    style: Style, start: float, end: float, body: str, fade_in: bool, fade_out: bool
+) -> list[str]:
+    """Full-strip mode: emit one rectangle on layer 0 and the text
+    on layer 1, both positioned so the text sits centred on the strip."""
+    left, top, w, h = _strip_rect(style)
+    cx = left + w // 2
+    cy = top + h // 2
+    bgr, aa = _split_back(style.back_colour)
+    fade = _fade_prefix(fade_in, fade_out)
+
+    path = _rounded_rect_path(w, h, style.radius)
+    rect_text = (
+        f"{{\\an7\\pos({left},{top}){fade}\\bord0\\shad0"
+        f"\\1c&H{bgr}&\\1a&H{aa}&\\p1}}{path}{{\\p0}}"
+    )
+
+    text_text = f"{{\\an5\\pos({cx},{cy}){fade}}}{body}"
+
+    return [
+        _dialogue(0, start, end, rect_text),
+        _dialogue(1, start, end, text_text),
+    ]
+
+
+# ---- main builder -----------------------------------------------------------
 
 def build_ass(segments: list[Segment], style: Style) -> str:
     events: list[str] = []
     for seg in segments:
         if not seg.words:
             end = max(seg.end, seg.start + MIN_DURATION)
-            events.append(
-                _event(seg.start, end, _ass_escape(seg.text),
-                       fade_in=True, fade_out=True)
-            )
+            body = _ass_escape(seg.text)
+            if style.full_strip:
+                events.extend(_strip_events(style, seg.start, end, body, True, True))
+            else:
+                events.append(_word_box_text_event(seg.start, end, body, True, True))
             continue
+
         chunks = _chunk(seg.words, style.max_words_per_line)
         last = len(chunks) - 1
         for i, chunk in enumerate(chunks):
@@ -189,13 +285,14 @@ def build_ass(segments: list[Segment], style: Style) -> str:
             end = chunk[-1].end
             if end - start < MIN_DURATION:
                 end = start + MIN_DURATION
-            events.append(
-                _event(
-                    start, end, _build_karaoke_text(chunk),
-                    fade_in=(i == 0),
-                    fade_out=(i == last),
-                )
-            )
+            body = _build_karaoke_text(chunk)
+            fi = (i == 0)
+            fo = (i == last)
+            if style.full_strip:
+                events.extend(_strip_events(style, start, end, body, fi, fo))
+            else:
+                events.append(_word_box_text_event(start, end, body, fi, fo))
+
     return _header(style) + "\n".join(events) + "\n"
 
 

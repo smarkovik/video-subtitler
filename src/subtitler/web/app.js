@@ -176,20 +176,48 @@ function syncPreview() {
   const hi = $("opt-highlight").value;
   const tx = $("opt-text").value;
   const op = parseInt($("opt-opacity").value, 10);
+  const pos = $("opt-position").value;
+  const fullStrip = $("opt-fullstrip").checked;
+  const radius = parseInt($("opt-radius").value, 10);
 
   $("opt-highlight-hex").textContent = hi.toUpperCase();
   $("opt-text-hex").textContent = tx.toUpperCase();
   $("opt-opacity-label").textContent = op;
+  $("opt-radius-label").textContent = radius;
+
+  // Radius only matters in full-strip mode.
+  $("field-radius").classList.toggle("disabled", !fullStrip);
+
+  // Position → vertical alignment of preview content.
+  const preview = $("preview");
+  preview.style.alignItems =
+    pos === "top" ? "flex-start" :
+    pos === "middle" ? "center" :
+    "flex-end";
+
+  // Strip vs word-boxes.
+  const inner = $("preview-inner");
+  inner.classList.toggle("strip", fullStrip);
+  if (fullStrip) {
+    inner.style.background = `rgba(0, 0, 0, ${op / 100})`;
+    inner.style.borderRadius = radius + "px";
+  } else {
+    inner.style.background = "transparent";
+    inner.style.borderRadius = "0";
+  }
 
   document.querySelectorAll("#preview .pw").forEach(el => {
     el.style.fontFamily = `${font}, sans-serif`;
     el.style.color = el.classList.contains("active") ? hi : tx;
-    el.style.background = `rgba(0, 0, 0, ${op / 100})`;
+    el.style.background = fullStrip ? "transparent" : `rgba(0, 0, 0, ${op / 100})`;
   });
 }
-["opt-font", "opt-highlight", "opt-text", "opt-opacity"].forEach(id =>
-  $(id).addEventListener("input", syncPreview)
-);
+
+[
+  "opt-font", "opt-highlight", "opt-text", "opt-opacity",
+  "opt-position", "opt-fullstrip", "opt-radius",
+].forEach(id => $(id).addEventListener("input", syncPreview));
+$("opt-fullstrip").addEventListener("change", syncPreview);
 
 $("btn-render").addEventListener("click", startRender);
 $("btn-rerender").addEventListener("click", () => showStage("edit"));
@@ -210,6 +238,9 @@ async function startRender() {
     highlight_hex: $("opt-highlight").value,
     text_hex: $("opt-text").value,
     box_opacity: parseInt($("opt-opacity").value, 10),
+    position: $("opt-position").value,
+    full_strip: $("opt-fullstrip").checked,
+    radius: parseInt($("opt-radius").value, 10),
   };
 
   showStage("render");

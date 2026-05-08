@@ -137,6 +137,9 @@ def start_render(job_id: str, payload: dict, bg: BackgroundTasks) -> dict:
         "highlight_hex": payload.get("highlight_hex") or "#FFEE00",
         "text_hex": payload.get("text_hex") or "#FFFFFF",
         "box_opacity": int(payload.get("box_opacity", 50)),
+        "full_strip": bool(payload.get("full_strip", False)),
+        "radius": int(payload.get("radius", 0)),
+        "position": payload.get("position") or "bottom",
     }
 
     # Fresh log + status for this render pass; keep transcript segments.

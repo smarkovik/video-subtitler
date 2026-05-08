@@ -245,23 +245,58 @@ details.settings .grid {
   padding: 0 16px 16px;
 }
 #preview {
+  position: relative;
   display: flex;
   justify-content: center;
+  align-items: flex-end;       /* default: bottom; overridden by JS */
   background:
     repeating-linear-gradient(45deg, #1a2030, #1a2030 8px, #14182a 8px, #14182a 16px);
   border-radius: 6px;
-  padding: 24px 12px;
+  padding: 16px 12px;
+  height: 130px;
+}
+#preview-inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  gap: 4px;
+}
+#preview-inner.strip {
+  width: 92%;                  /* mirrors video margin_side ~4% */
+  background: rgba(0, 0, 0, 0.5);
 }
 .pw {
+  position: relative;
   display: inline-block;
-  padding: 6px 8px;
-  margin: 0 1px;
+  padding: 4px 6px;
   font: 600 22px Arial, sans-serif;
   color: #FFFFFF;
-  background: rgba(0, 0, 0, 0.5);
-  text-shadow: 0 0 2px rgba(0,0,0,0.9);
+  background: rgba(0, 0, 0, 0.5);   /* word-box mode */
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.9);
+}
+#preview-inner.strip .pw {
+  background: transparent;          /* let the strip do the painting */
 }
 .pw.active { color: #FFEE00; }
+
+.field .check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--text);
+  font-size: 13px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+.field .check input { margin: 0; }
+
+.field.disabled { opacity: 0.45; pointer-events: none; }
 
 .opts {
   margin: 16px 0 20px;
