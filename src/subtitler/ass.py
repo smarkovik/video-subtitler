@@ -17,15 +17,16 @@ from .transcribe import Segment, Word
 
 # Style constants
 FONT = "Arial"
-FONT_SIZE = 72            # pt at 1920x1080 reference; ffmpeg scales it
+FONT_SIZE = 50            # ~30% smaller than the original 72; quieter strip
 PRIMARY = "&H0000FFFF"    # active word: yellow (BGR + alpha 00)
 SECONDARY = "&H00FFFFFF"  # inactive: white
 OUTLINE = "&H00000000"    # black outline
 BACK = "&H80000000"       # 50% black box behind text
 MARGIN_V = 80             # pixels from bottom
 
-MAX_WORDS_PER_LINE = 6
+MAX_WORDS_PER_LINE = 4    # vertical 1080-wide videos can't fit more than this
 MIN_DURATION = 0.4        # seconds; pad if shorter so it's readable
+FADE_MS = 150             # fade in at segment start, fade out at segment end
 
 
 def _fmt_time(t: float) -> str:
@@ -80,7 +81,23 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 
 
-def _event(start: float, end: float, text: str) -> str:
+def _event(
+    start: float,
+    end: float,
+    text: str,
+    fade_in: bool = False,
+    fade_out: bool = False,
+) -> str:
+    """Wrap an event with optional fade-in / fade-out.
+
+    \\fad(in_ms, out_ms) animates the alpha of the entire event,
+    including the BackColour box. Mid-segment chunks pass both flags
+    as False so consecutive chunks snap-cut without strobing.
+    """
+    if fade_in or fade_out:
+        fi = FADE_MS if fade_in else 0
+        fo = FADE_MS if fade_out else 0
+        text = f"{{\\fad({fi},{fo})}}{text}"
     return f"Dialogue: 0,{_fmt_time(start)},{_fmt_time(end)},Default,,0,0,0,,{text}"
 
 
@@ -89,16 +106,27 @@ def build_ass(segments: list[Segment], max_words: int = MAX_WORDS_PER_LINE) -> s
     for seg in segments:
         if not seg.words:
             # No word timestamps (e.g. user inserted a fresh line);
-            # fall back to a plain block.
+            # fall back to a plain block, faded both ends.
             end = max(seg.end, seg.start + MIN_DURATION)
-            events.append(_event(seg.start, end, _ass_escape(seg.text)))
+            events.append(
+                _event(seg.start, end, _ass_escape(seg.text),
+                       fade_in=True, fade_out=True)
+            )
             continue
-        for chunk in _chunk(seg.words, max_words):
+        chunks = _chunk(seg.words, max_words)
+        last = len(chunks) - 1
+        for i, chunk in enumerate(chunks):
             start = chunk[0].start
             end = chunk[-1].end
             if end - start < MIN_DURATION:
                 end = start + MIN_DURATION
-            events.append(_event(start, end, _build_karaoke_text(chunk)))
+            events.append(
+                _event(
+                    start, end, _build_karaoke_text(chunk),
+                    fade_in=(i == 0),
+                    fade_out=(i == last),
+                )
+            )
     return _header() + "\n".join(events) + "\n"
 
 
