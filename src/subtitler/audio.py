@@ -43,6 +43,23 @@ def probe_dimensions(video: Path) -> tuple[int, int]:
     return int(w), int(h)
 
 
+def probe_duration(video: Path) -> float:
+    """Return the video's duration in seconds via ffprobe."""
+    ensure_ffmpeg()
+    cmd = [
+        "ffprobe", "-v", "error",
+        "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        str(video),
+    ]
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    if proc.returncode != 0 or not proc.stdout.strip():
+        raise FFmpegFailed(
+            f"ffprobe failed reading duration:\n{proc.stderr[-500:]}"
+        )
+    return float(proc.stdout.strip())
+
+
 def extract_audio(video: Path, out_wav: Path) -> Path:
     """Extract mono 16kHz PCM WAV. Whisper expects this format."""
     ensure_ffmpeg()

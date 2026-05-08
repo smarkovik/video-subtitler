@@ -60,6 +60,7 @@ fileInput.addEventListener("change", () => {
 
 async function handleFile(file) {
   showStage("transcribe");
+  setProgress("bar1", "pct1", 0);
   $("status1").textContent = `Uploading ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)...`;
 
   const fd = new FormData();
@@ -96,6 +97,11 @@ function streamEvents(id, handler, logEl) {
 
 // ---------- transcribe phase -------------------------------------------------
 
+function setProgress(barId, pctId, percent) {
+  $(barId).style.width = percent + "%";
+  $(pctId).textContent = percent + "%";
+}
+
 function onTranscribeMsg(msg, es, logEl) {
   if (msg.type === "segment") {
     segments[msg.index] = msg.segment;
@@ -107,8 +113,11 @@ function onTranscribeMsg(msg, es, logEl) {
     logEl.scrollTop = logEl.scrollHeight;
   } else if (msg.type === "log") {
     appendLog(logEl, msg.message, "info");
+  } else if (msg.type === "progress" && msg.phase === "transcribe") {
+    setProgress("bar1", "pct1", msg.percent);
   } else if (msg.type === "status") {
     if (msg.status === "transcribed") {
+      setProgress("bar1", "pct1", 100);
       es.close();
       showEditor();
     } else if (msg.status === "error") {
@@ -206,6 +215,7 @@ async function startRender() {
   showStage("render");
   $("status2").textContent = "Rendering...";
   $("log2").innerHTML = "";
+  setProgress("bar2", "pct2", 0);
 
   await fetch(`/jobs/${jobId}/render`, {
     method: "POST",
@@ -218,8 +228,11 @@ async function startRender() {
 function onRenderMsg(msg, es, logEl) {
   if (msg.type === "log") {
     appendLog(logEl, msg.message, "info");
+  } else if (msg.type === "progress" && msg.phase === "burn") {
+    setProgress("bar2", "pct2", msg.percent);
   } else if (msg.type === "status") {
     if (msg.status === "rendered") {
+      setProgress("bar2", "pct2", 100);
       es.close();
       $("download").href = `/jobs/${jobId}/download`;
       showStage("done");

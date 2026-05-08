@@ -84,6 +84,33 @@ main {
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+.progress .bar {
+  flex: 1;
+  height: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.progress .fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transition: width 0.3s ease;
+}
+.progress .pct {
+  width: 44px;
+  text-align: right;
+  font: 12px ui-monospace, monospace;
+  color: var(--muted);
+}
 .log .seg-line { color: var(--text); }
 .log .seg-line .ts { color: var(--muted); }
 .log .info { color: var(--muted); }

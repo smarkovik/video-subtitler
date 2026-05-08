@@ -32,7 +32,7 @@ from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from .audio import extract_audio, probe_dimensions
+from .audio import extract_audio, probe_dimensions, probe_duration
 from .ass import Style, write_ass
 from .burn import burn
 from .realign import realign
@@ -57,6 +57,11 @@ class Job:
     log: list[str] = field(default_factory=list)
     width: int = 0
     height: int = 0
+    duration_s: float = 0.0
+    # Progress: 0..100. phase identifies which step the percent is
+    # describing so the frontend can route it to the right meter.
+    progress_percent: int = 0
+    progress_phase: str = ""  # "transcribe" | "burn" | ""
 
 
 JOBS: dict[str, Job] = {}
@@ -169,9 +174,9 @@ async def _event_stream(job_id: str):
     last_seg = 0
     last_log = 0
     last_status: str | None = None
+    last_progress: tuple[str, int] = ("", -1)
 
     while True:
-        # Drain new segments
         while last_seg < len(job.segments):
             seg = job.segments[last_seg]
             yield _sse({
@@ -185,10 +190,18 @@ async def _event_stream(job_id: str):
             })
             last_seg += 1
 
-        # Drain new log lines
         while last_log < len(job.log):
             yield _sse({"type": "log", "message": job.log[last_log]})
             last_log += 1
+
+        cur_progress = (job.progress_phase, job.progress_percent)
+        if cur_progress != last_progress and job.progress_phase:
+            yield _sse({
+                "type": "progress",
+                "phase": job.progress_phase,
+                "percent": job.progress_percent,
+            })
+            last_progress = cur_progress
 
         if job.status != last_status:
             yield _sse({
@@ -213,24 +226,35 @@ def _sse(payload: dict) -> str:
 def _do_transcribe(job: Job) -> None:
     try:
         job.status = "transcribing"
+        job.progress_phase = "transcribe"
+        job.progress_percent = 0
+
         job.log.append("Extracting audio...")
         wav = job.workdir / "audio.wav"
         extract_audio(job.video, wav)
 
         job.log.append("Probing video dimensions...")
         job.width, job.height = probe_dimensions(job.video)
-        job.log.append(f"Video is {job.width}x{job.height}.")
+        job.duration_s = probe_duration(job.video)
+        job.log.append(
+            f"Video is {job.width}x{job.height}, "
+            f"{int(job.duration_s // 60)}m{int(job.duration_s % 60):02d}s long."
+        )
 
         job.log.append("Transcribing (Whisper-medium, int8 on CPU). This is the slow part.")
-        transcribe(
-            wav,
-            on_segment=lambda s: job.segments.append(s),
-            progress=False,
-        )
+
+        def on_segment(s: Segment) -> None:
+            job.segments.append(s)
+            if job.duration_s > 0:
+                pct = int(s.end / job.duration_s * 100)
+                job.progress_percent = max(0, min(99, pct))
+
+        transcribe(wav, on_segment=on_segment, progress=False)
 
         write_srt(job.segments, job.workdir / "transcript.srt")
         write_words_json(job.segments, job.workdir / "words.json")
 
+        job.progress_percent = 100
         job.log.append(f"Done — {len(job.segments)} segments.")
         job.status = "transcribed"
     except Exception as e:
@@ -273,8 +297,17 @@ def _do_render(
 
         out_path = job.workdir / "subbed.mp4"
         job.log.append("Burning subtitles into video. Roughly as long as the video itself.")
-        burn(job.video, ass_path, out_path)
+        job.progress_phase = "burn"
+        job.progress_percent = 0
 
+        def on_burn_progress(t_seconds: float) -> None:
+            if job.duration_s > 0:
+                pct = int(t_seconds / job.duration_s * 100)
+                job.progress_percent = max(0, min(99, pct))
+
+        burn(job.video, ass_path, out_path, on_progress=on_burn_progress)
+
+        job.progress_percent = 100
         job.log.append("Render complete.")
         job.status = "rendered"
     except Exception as e:
