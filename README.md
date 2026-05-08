@@ -43,7 +43,8 @@ make encode VIDEO=v.mov FLAGS="--cyrillic"  # transliterate Latin -> Cyrillic
 4. Edit the generated `.srt` in Notepad to fix any misheard words.
 5. Drag the same video onto `run.bat` again to burn in the subtitles.
 
-Full walkthrough in [docs/setup-windows.md](docs/setup-windows.md).
+Full walkthrough — including specific download URLs and a manual
+fallback path — in [WINDOWS-SETUP.md](WINDOWS-SETUP.md).
 
 ## Pipeline
 

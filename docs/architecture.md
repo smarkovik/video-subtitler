@@ -101,7 +101,7 @@ the ASS is an internal render artifact.
 
 ## Failure modes to handle
 
-- **ffmpeg missing** → friendly error pointing to setup doc.
+- **ffmpeg missing** → friendly error pointing to WINDOWS-SETUP.md.
 - **Model download fails** (first run, no internet) → suggest running once with internet to cache.
 - **Edited SRT word count differs from original** → fall back to even time distribution, log a warning.
 - **Video has no audio** → ffmpeg returns empty WAV, transcription yields zero segments → emit empty SRT and stop.

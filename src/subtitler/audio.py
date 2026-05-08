@@ -19,7 +19,7 @@ def ensure_ffmpeg() -> str:
     path = shutil.which("ffmpeg")
     if not path:
         raise FFmpegMissing(
-            "ffmpeg not found on PATH. See docs/setup-windows.md."
+            "ffmpeg not found on PATH. See WINDOWS-SETUP.md."
         )
     return path
 
