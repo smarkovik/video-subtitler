@@ -9,15 +9,15 @@ from .audio import ensure_ffmpeg, FFmpegFailed
 
 
 def _escape_for_filter(p: Path) -> str:
-    """ffmpeg's subtitles= filter needs the path escaped weirdly,
-    especially on Windows where colons and backslashes confuse the
-    filter parser.
+    """ffmpeg's filter-graph parser uses : as option separator and \\
+    as the escape char. On Windows, drive-letter colons and path
+    backslashes both blow up if not escaped.
 
-    See https://trac.ffmpeg.org/wiki/FilteringGuide#Notesonfilteringonwindows
+    Reference: https://ffmpeg.org/ffmpeg-filters.html#Notes-on-filtergraph-escaping
     """
     s = str(p)
-    s = s.replace("\\", "\\\\\\\\")  # \  ->  \\\\
-    s = s.replace(":", "\\:")        # :  ->  \:
+    s = s.replace("\\", "\\\\")  # backslash escape (Windows paths)
+    s = s.replace(":", "\\:")    # colon escape (drive letters, etc)
     s = s.replace("'", "\\'")
     return s
 
@@ -29,7 +29,7 @@ def burn(video: Path, ass_file: Path, out: Path) -> Path:
     cmd = [
         "ffmpeg", "-y",
         "-i", str(video),
-        "-vf", f"subtitles='{filter_path}'",
+        "-vf", f"subtitles=filename={filter_path}",
         "-c:v", "libx264",
         "-preset", "medium",
         "-crf", "20",
