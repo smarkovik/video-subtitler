@@ -13,6 +13,30 @@ Early development. See [docs/ideation.md](docs/ideation.md) for the
 problem statement and design decisions, and the commit log for build
 progress.
 
+## Quick start (macOS / Linux)
+
+```bash
+make setup                              # venv + deps + ffmpeg sanity check
+make model                              # one-time, needs internet
+make transcribe VIDEO=path/to/video.mov # produces video.srt for review
+# ... open video.srt in your editor, fix names/slang, save ...
+make encode VIDEO=path/to/video.mov     # produces video.subbed.mp4
+```
+
+Optional flags via `FLAGS=`:
+
+```bash
+make encode VIDEO=v.mov FLAGS="--clean"     # strip filler words
+make encode VIDEO=v.mov FLAGS="--cyrillic"  # transliterate Latin -> Cyrillic
+```
+
+`make clean VIDEO=v.mov` removes the generated `.wav`, `.srt`,
+`.words.json`, `.ass`, and `.subbed.mp4` (keeps the source video).
+`make help` lists all targets.
+
+On Windows, use `run.bat` (drag-and-drop) or follow
+[docs/setup-windows.md](docs/setup-windows.md).
+
 ## Pipeline
 
 ```
