@@ -151,13 +151,36 @@ function showEditor() {
   });
 
   showStage("edit");
-  // Autosize after layout settles.
+  // Autosize after layout settles, and pull preview into sync.
   requestAnimationFrame(() => {
     document.querySelectorAll("#segments textarea").forEach(autosize);
+    syncPreview();
   });
 }
 
 // ---------- render phase -----------------------------------------------------
+
+// ---------- live style preview -----------------------------------------------
+
+function syncPreview() {
+  const font = $("opt-font").value;
+  const hi = $("opt-highlight").value;
+  const tx = $("opt-text").value;
+  const op = parseInt($("opt-opacity").value, 10);
+
+  $("opt-highlight-hex").textContent = hi.toUpperCase();
+  $("opt-text-hex").textContent = tx.toUpperCase();
+  $("opt-opacity-label").textContent = op;
+
+  document.querySelectorAll("#preview .pw").forEach(el => {
+    el.style.fontFamily = `${font}, sans-serif`;
+    el.style.color = el.classList.contains("active") ? hi : tx;
+    el.style.background = `rgba(0, 0, 0, ${op / 100})`;
+  });
+}
+["opt-font", "opt-highlight", "opt-text", "opt-opacity"].forEach(id =>
+  $(id).addEventListener("input", syncPreview)
+);
 
 $("btn-render").addEventListener("click", startRender);
 $("btn-rerender").addEventListener("click", () => showStage("edit"));
@@ -174,6 +197,10 @@ async function startRender() {
     segments: edited,
     clean: $("opt-clean").checked,
     cyrillic: false,
+    font: $("opt-font").value,
+    highlight_hex: $("opt-highlight").value,
+    text_hex: $("opt-text").value,
+    box_opacity: parseInt($("opt-opacity").value, 10),
   };
 
   showStage("render");

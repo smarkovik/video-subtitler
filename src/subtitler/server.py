@@ -127,11 +127,17 @@ def start_render(job_id: str, payload: dict, bg: BackgroundTasks) -> dict:
     ]
     clean = bool(payload.get("clean", False))
     cyrillic = bool(payload.get("cyrillic", False))
+    style_opts = {
+        "font": payload.get("font") or "Arial",
+        "highlight_hex": payload.get("highlight_hex") or "#FFEE00",
+        "text_hex": payload.get("text_hex") or "#FFFFFF",
+        "box_opacity": int(payload.get("box_opacity", 50)),
+    }
 
     # Fresh log + status for this render pass; keep transcript segments.
     job.log = []
     job.status = "transcribed"
-    bg.add_task(_do_render, job, edited, clean, cyrillic)
+    bg.add_task(_do_render, job, edited, clean, cyrillic, style_opts)
     return {"status": "started"}
 
 
@@ -233,7 +239,13 @@ def _do_transcribe(job: Job) -> None:
         job.status = "error"
 
 
-def _do_render(job: Job, edited: list[Segment], clean: bool, cyrillic: bool) -> None:
+def _do_render(
+    job: Job,
+    edited: list[Segment],
+    clean: bool,
+    cyrillic: bool,
+    style_opts: dict,
+) -> None:
     try:
         job.status = "rendering"
 
@@ -250,12 +262,13 @@ def _do_render(job: Job, edited: list[Segment], clean: bool, cyrillic: bool) -> 
             merged = latin_to_cyrillic_segments(merged)
             job.log.append("Transliterated to Cyrillic.")
 
-        style = Style.for_video(job.width, job.height)
+        style = Style.for_video(job.width, job.height, **style_opts)
         ass_path = job.workdir / "subs.ass"
         write_ass(merged, ass_path, style)
         job.log.append(
-            f"Built ASS — {style.width}x{style.height}, "
-            f"font {style.font_size}px, {style.max_words_per_line} words/line."
+            f"Built ASS — {style.width}x{style.height}, font={style.font!r} "
+            f"{style.font_size}px, {style.max_words_per_line} words/line, "
+            f"box opacity {style_opts['box_opacity']}%."
         )
 
         out_path = job.workdir / "subbed.mp4"

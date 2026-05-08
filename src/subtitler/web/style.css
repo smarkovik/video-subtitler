@@ -132,6 +132,110 @@ main {
 
 /* Options + buttons --------------------------------------------- */
 
+/* Settings panel ------------------------------------------------ */
+
+details.settings {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin: 16px 0;
+  padding: 0;
+  overflow: hidden;
+}
+details.settings summary {
+  padding: 12px 16px;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--text);
+  user-select: none;
+  list-style: none;
+}
+details.settings summary::-webkit-details-marker { display: none; }
+details.settings summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 8px;
+  color: var(--muted);
+  transition: transform 0.15s;
+}
+details.settings[open] summary::before { transform: rotate(90deg); }
+
+details.settings .grid {
+  padding: 4px 16px 12px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+@media (max-width: 600px) {
+  details.settings .grid { grid-template-columns: 1fr; }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.field span { color: var(--muted); }
+.field em { color: var(--muted); font-style: normal; opacity: 0.7; font-size: 11px; }
+.field select,
+.field input[type="range"] {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 6px 8px;
+  font: inherit;
+}
+.field select:focus,
+.field input[type="range"]:focus { outline: none; border-color: var(--accent); }
+
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.color-row input[type="color"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 36px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0;
+  cursor: pointer;
+}
+.color-row input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+.color-row input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 3px; }
+.color-row .hex {
+  font: 12px ui-monospace, monospace;
+  color: var(--muted);
+}
+
+#preview-row {
+  padding: 0 16px 16px;
+}
+#preview {
+  display: flex;
+  justify-content: center;
+  background:
+    repeating-linear-gradient(45deg, #1a2030, #1a2030 8px, #14182a 8px, #14182a 16px);
+  border-radius: 6px;
+  padding: 24px 12px;
+}
+.pw {
+  display: inline-block;
+  padding: 6px 8px;
+  margin: 0 1px;
+  font: 600 22px Arial, sans-serif;
+  color: #FFFFFF;
+  background: rgba(0, 0, 0, 0.5);
+  text-shadow: 0 0 2px rgba(0,0,0,0.9);
+}
+.pw.active { color: #FFEE00; }
+
 .opts {
   margin: 16px 0 20px;
   font-size: 13px;

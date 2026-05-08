@@ -35,6 +35,54 @@
       timestamps are locked.
     </div>
     <div id="segments"></div>
+
+    <details class="settings" open>
+      <summary>Subtitle style</summary>
+      <div class="grid">
+        <label class="field">
+          <span>Font</span>
+          <select id="opt-font">
+            <option value="Arial" selected>Arial</option>
+            <option value="Verdana">Verdana</option>
+            <option value="Tahoma">Tahoma</option>
+            <option value="Trebuchet MS">Trebuchet MS</option>
+            <option value="Impact">Impact</option>
+            <option value="Georgia">Georgia (serif)</option>
+            <option value="Courier New">Courier New (mono)</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Highlight colour <em>(active word)</em></span>
+          <div class="color-row">
+            <input type="color" id="opt-highlight" value="#FFEE00">
+            <span class="hex" id="opt-highlight-hex">#FFEE00</span>
+          </div>
+        </label>
+
+        <label class="field">
+          <span>Text colour <em>(inactive words)</em></span>
+          <div class="color-row">
+            <input type="color" id="opt-text" value="#FFFFFF">
+            <span class="hex" id="opt-text-hex">#FFFFFF</span>
+          </div>
+        </label>
+
+        <label class="field">
+          <span>Box opacity <em><span id="opt-opacity-label">50</span>%</em></span>
+          <input type="range" id="opt-opacity" min="0" max="100" value="50">
+        </label>
+      </div>
+
+      <div id="preview-row">
+        <div id="preview">
+          <span class="pw" id="pw1">Привет</span>
+          <span class="pw active" id="pw2">свет</span>
+          <span class="pw" id="pw3">данас</span>
+        </div>
+      </div>
+    </details>
+
     <div class="opts">
       <label><input type="checkbox" id="opt-clean"> Strip filler words (<i>ovaj, znači, pa, ono, kao</i>)</label>
     </div>
