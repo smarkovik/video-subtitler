@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Models (downloaded on first run, large)
+models/
+*.bin
+*.pt
+*.ct2
+
+# Video / audio working files
+videos/
+*.mp4
+*.mov
+*.mkv
+*.avi
+*.webm
+*.wav
+*.mp3
+*.m4a
+
+# Generated outputs
+*.srt
+*.ass
+*.words.json
+out/
+output/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
