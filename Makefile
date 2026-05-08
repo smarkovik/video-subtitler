@@ -36,7 +36,7 @@ endif
 #   make encode VIDEO=v.mov FLAGS="--clean"
 FLAGS ?=
 
-.PHONY: help setup check model transcribe encode clean nuke
+.PHONY: help setup check model ui transcribe encode clean nuke
 
 help:  ## show this help
 	@awk 'BEGIN { FS = ":.*## "; printf "\n  Usage: make <target> [VIDEO=path] [FLAGS=...]\n\n  Targets:\n" } \
@@ -71,6 +71,9 @@ check:  ## verify ffmpeg has libass (the 'subtitles' filter)
 
 model: $(VENV)/.installed  ## download whisper-medium weights (one-time, needs internet)
 	$(PY) -m subtitler --download-model
+
+ui: $(VENV)/.installed  ## launch the local web UI (drop video, edit, render)
+	$(PY) -m subtitler.server
 
 # --- pipeline -----------------------------------------------------------------
 
