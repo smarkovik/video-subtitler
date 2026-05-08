@@ -1,95 +1,91 @@
-# Windows setup
+# Windows setup (plug-and-play)
 
-One-time setup for a Windows ThinkPad. After this, the tool runs
-fully offline.
+For non-developers. You'll do this **once**. After that, subtitling
+a video is just a drag-and-drop.
 
-## 1. Install Python 3.11
+## What you need
 
-Grab the installer from <https://www.python.org/downloads/windows/>.
-**Tick "Add Python to PATH"** during install.
+- A Windows 10 (build 1809 or newer) or Windows 11 PC.
+- An internet connection for the first-time setup only.
+- About 3 GB of free disk space (Python + ffmpeg + the speech model).
 
-Verify in a fresh PowerShell window:
+## Step 1 — Get the tool
 
-```powershell
-python --version
-```
+1. Go to <https://github.com/smarkovik/video-subtitler>.
+2. Click the green **Code** button → **Download ZIP**.
+3. Right-click the downloaded zip → **Extract All...** → pick a
+   folder you'll remember (Desktop is fine).
 
-Should print `Python 3.11.x`.
+You should now have a folder called `video-subtitler` with files
+inside it including `setup.bat` and `run.bat`.
 
-## 2. Install ffmpeg
+## Step 2 — Run setup (one time)
 
-Easiest way: install the [Gyan.dev essentials build](https://www.gyan.dev/ffmpeg/builds/).
+**Double-click `setup.bat`** inside the `video-subtitler` folder.
 
-1. Download the "release essentials" zip.
-2. Unzip to `C:\ffmpeg`.
-3. Add `C:\ffmpeg\bin` to your `Path` (System Properties → Environment Variables → Path → Edit → New).
+A black window opens and walks through:
 
-Verify:
+1. Installing Python (if you don't have it).
+2. Installing ffmpeg (the video tool).
+3. Downloading the speech-recognition model (about 1.5 GB — grab a
+   coffee, this is the slow part).
 
-```powershell
-ffmpeg -version
-```
+Windows will probably show a popup asking permission to install
+software. Click **Yes**.
 
-## 3. Clone and install this project
+When you see "Setup complete." you can close the window.
 
-```powershell
-git clone <repo-url> video-subtitler
-cd video-subtitler
+## Step 3 — Subtitle a video
 
-python -m venv .venv
-.venv\Scripts\Activate.ps1
+1. **Drag your video file onto `run.bat`.**
+   A black window opens and starts transcribing. On a laptop, expect
+   it to take roughly the same length as the video itself.
 
-pip install -r requirements.txt
-```
+2. When it finishes, look in the same folder as your video. There's
+   now a file with the same name but ending in `.srt` — for example
+   `vacation.srt` next to `vacation.mp4`.
 
-If PowerShell refuses to run `Activate.ps1`, run this once as
-Administrator and retry:
+3. **Open the `.srt` file** in Notepad (right-click → Open With →
+   Notepad). Read through the text. Fix any names, technical terms,
+   or words the computer misheard. Save the file.
 
-```powershell
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-```
+   Don't change the timestamps (the lines like
+   `00:00:14,190 --> 00:00:16,510`) — those tell the tool when each
+   subtitle should appear.
 
-## 4. First run (downloads the model)
+4. **Drag the same video onto `run.bat` again.**
+   This time it builds the final video with the subtitles burned in.
 
-The Whisper `medium` model (~1.5 GB) downloads on first use and is
-cached at `%USERPROFILE%\.cache\huggingface\hub`. Run this once with
-internet:
+When it's done, look for a file ending in `.subbed.mp4` next to your
+original video. That's the one you upload to YouTube.
 
-```powershell
-python -m subtitler --download-model
-```
+## Going offline
 
-After this completes, you can disconnect from the internet entirely.
-
-## 5. Use it
-
-```powershell
-python -m subtitler "C:\path\to\video.mp4"
-```
-
-This produces `video.srt` and `video.words.json` next to the source.
-
-Open `video.srt` in Notepad, fix any misheard names or words, save.
-
-Then render:
-
-```powershell
-python -m subtitler "C:\path\to\video.mp4" --render
-```
-
-This produces `video.subbed.mp4`.
-
-Drag-and-drop wrapper (`run.bat`) is documented separately once it
-ships.
+After setup is done, you can disconnect from the internet entirely.
+The whole transcription and rendering pipeline runs on your machine.
 
 ## Troubleshooting
 
-**"ffmpeg is not recognized"** — `Path` change didn't take effect.
-Close and reopen PowerShell, or sign out and back in.
+**"setup.bat" closes immediately when I double-click it** — the
+script paused waiting for you to press a key. Look for the window;
+it might be hidden behind another one.
 
-**Model download stalls** — Hugging Face occasionally rate-limits.
-Retry after a minute, or set `HF_HUB_ENABLE_HF_TRANSFER=0`.
+**"winget is missing"** — your Windows is too old. Open the
+Microsoft Store, search for "App Installer" by Microsoft, install or
+update it. Then run `setup.bat` again.
 
-**Transcription is impossibly slow** — confirm you're on the `medium`
-model, not `large-v3`. Drop to `small` with `--model small` if your
-laptop is older than 2018.
+**Pop-up asks for admin / UAC** — that's Windows asking permission
+to install Python or ffmpeg. Click Yes.
+
+**Setup says "ffmpeg is missing the subtitles filter"** — the
+Windows ffmpeg build doesn't include subtitle rendering. The setup
+script asks for the right one (`Gyan.FFmpeg`); if you already had
+a different one installed, uninstall it first.
+
+**Transcription runs but the words are wrong** — that's expected
+for names, slang, or technical terms. That's why you edit the `.srt`
+in step 3 before rendering.
+
+**Transcription is impossibly slow** — `medium` is the default
+model. If your laptop is from before ~2018, ask whoever sent you
+this tool to switch to `small` (faster, slightly less accurate).
