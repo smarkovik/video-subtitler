@@ -36,15 +36,16 @@ make encode VIDEO=v.mov FLAGS="--cyrillic"  # transliterate Latin -> Cyrillic
 
 ## Quick start (Windows, non-developer)
 
-1. Download the repo as a ZIP and extract it.
-2. Double-click `setup.bat`. It installs Python, ffmpeg, and the
-   speech model for you. Wait for "Setup complete."
-3. Drag a video onto `run.bat` to transcribe.
-4. Edit the generated `.srt` in Notepad to fix any misheard words.
-5. Drag the same video onto `run.bat` again to burn in the subtitles.
+**👉 Full step-by-step walkthrough: [WINDOWS-SETUP.md](WINDOWS-SETUP.md).** Every click and screen described.
 
-Full walkthrough — including specific download URLs and a manual
-fallback path — in [WINDOWS-SETUP.md](WINDOWS-SETUP.md).
+The short version, for context:
+
+1. Download the repo as a ZIP and extract it to your Desktop.
+2. Double-click `setup.bat`. It installs Python, ffmpeg, and the
+   speech model. Wait 5–15 minutes for "Setup complete."
+3. Double-click `ui.bat`. Your browser opens to the tool.
+4. Drag a video onto the page. Wait for transcription. Fix any
+   misheard words. Click **Render**. Click **Download**.
 
 ## Pipeline
 

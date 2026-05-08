@@ -1,256 +1,328 @@
-# Windows setup — what to download and where
+# Setting up video-subtitler on Windows
 
-This is a complete walkthrough for a non-developer on Windows. Two
-paths are documented:
+Hi 👋 — this is the full step-by-step. Follow every step in order.
+Don't skip ahead. If something on your screen doesn't look like
+what's described here, **stop and message Tancho** before continuing.
 
-- **Easy path** (recommended): one download from GitHub, then
-  double-click `setup.bat` and it installs everything else for you.
-- **Manual path** (fallback if the easy path fails): three downloads
-  you install yourself, in order.
-
-You only do this once. After it's done, subtitling a video is a
+You'll do this **once**. After it's working, making subtitles is a
 drag-and-drop.
 
----
+## What you'll need
 
-## Before you start — quick check
-
-Press the Windows key, type `winver`, hit Enter. A small window
-shows your Windows version.
-
-- **Windows 11 — anything**: ✅ ready, follow the easy path.
-- **Windows 10 build 19041 or newer** (about mid-2020 onwards):
-  ✅ ready, follow the easy path.
-- **Windows 10 older than build 19041**: skip to the [manual
-  path](#manual-path) — `winget` won't be available to you.
-- **Windows 8 or 7**: not supported. Sorry.
-
-You also need about **3 GB of free disk space** for Python, ffmpeg,
-and the speech-recognition model.
+- A laptop running Windows 10 or Windows 11.
+- Internet connection (only needed during setup — afterwards the
+  tool runs offline).
+- About **30–60 minutes**. Most of it is waiting; you don't have to
+  babysit the screen.
+- About **3 GB of free disk space** for Python, ffmpeg, and the
+  speech-recognition model.
 
 ---
 
-## Easy path
+## Step 1 — Check your Windows version
 
-### Download #1 — the tool itself
+Some old Windows builds can't run this. Two minutes to check.
 
-Go to:
+1. Press the **Windows key** on your keyboard (the one with the
+   Windows logo, between Ctrl and Alt).
+2. Type **`winver`** (no quotes). Press **Enter**.
+3. A small "About Windows" window opens. Read the line that starts
+   with **"Version"**.
 
-> <https://github.com/smarkovik/video-subtitler>
+What to do based on what you see:
 
-Click the green **Code** button (top-right of the file list) →
-**Download ZIP**.
+- **"Windows 11" — anything**: ✅ continue to Step 2.
+- **"Windows 10 Version 2004 (OS Build 19041.x)"** or higher: ✅ continue to Step 2.
+- **Anything older, or "Windows 8 / 7"**: stop here, message Tancho.
 
-You'll get a file named `video-subtitler-main.zip` (a few hundred
-KB) in your `Downloads` folder.
-
-**Right-click that zip → Extract All... → choose Desktop** (or
-anywhere you'll remember).
-
-You should now have a folder called `video-subtitler-main` containing
-files like `setup.bat`, `run.bat`, `README.md`, `Makefile`, and
-folders called `src`, `docs`.
-
-### Run setup.bat
-
-**Double-click `setup.bat`** inside that folder.
-
-A black window opens. It will:
-
-1. Check that `winget` is available. (If not, see [What if winget is
-   missing](#what-if-winget-is-missing) below.)
-2. **Install Python 3.13** automatically. Windows may show a popup
-   asking permission — click **Yes**. About 30 seconds.
-3. **Install ffmpeg** automatically. Same — say Yes if asked. About
-   1 minute.
-4. Create a small Python environment inside the project folder
-   (called `.venv`).
-5. **Download the speech-recognition model.** This is ~1.5 GB and
-   takes 5–15 minutes depending on your internet. Grab a coffee.
-
-When you see **"Setup complete."**, you can close the window. You're
-done with setup forever.
-
-### What if winget is missing
-
-If `setup.bat` says *"winget is missing"*:
-
-1. Open the **Microsoft Store** (search for it from the Start menu).
-2. Search for **"App Installer"** (publisher: *Microsoft Corporation*).
-3. Click **Get** / **Update**.
-4. Direct link: <https://apps.microsoft.com/detail/9NBLGGH4NNS1>
-
-Once App Installer is installed/updated, run `setup.bat` again.
-
-If it still doesn't work, follow the [manual path](#manual-path).
+Close the small window when you're done.
 
 ---
 
-## Using it (after setup is done)
+## Step 2 — Download the tool from GitHub
 
-1. **Drag your video onto `run.bat`.** A black window opens and
-   transcribes the audio. On a laptop, expect roughly the same time
-   as the video itself (a 10-minute video → ~10 minutes).
+You're going to download a ZIP file. Don't worry about Git, GitHub
+accounts, or anything technical.
 
-2. When it finishes, look in the **same folder as your video**.
-   There's a new file with the same name but ending in `.srt`. For
-   example, if your video is `vacation.mp4`, you'll see
-   `vacation.srt`.
+1. Open your web browser (Edge, Chrome, Firefox — any of them work).
+2. Type or paste this address into the address bar and press Enter:
 
-3. **Open the `.srt` file in Notepad** (right-click → Open With →
-   Notepad). It looks like this:
+   <https://github.com/smarkovik/video-subtitler>
+
+3. You'll see a page listing files like `README.md`, `setup.bat`,
+   `src`, `docs`, etc.
+
+4. Near the **top right**, find the green button labelled **"Code"** with a small `<>` icon. Click it.
+
+5. A small menu pops down. Look at the **bottom of the menu** for the link **"Download ZIP"**. Click it.
+
+6. A file called **`video-subtitler-main.zip`** starts downloading. It's small — well under 1 MB. Wait for it to finish.
+
+---
+
+## Step 3 — Extract the ZIP
+
+ZIP files have to be "extracted" before you can use them on Windows.
+
+1. Open **File Explorer** (the yellow folder icon on your taskbar,
+   or press **Windows key + E**).
+2. In the left sidebar, click **"Downloads"**.
+3. Find the file **`video-subtitler-main.zip`**.
+4. **Right-click** it. From the menu choose **"Extract All..."**.
+5. A window appears asking where to extract. Click **"Browse..."**.
+6. In the left sidebar of the Browse window, click **"Desktop"**.
+   Then click **"Select Folder"**.
+7. Make sure the box "**Show extracted files when complete**" is
+   ticked. Click **"Extract"**.
+
+8. After a few seconds, a new File Explorer window opens. You'll be
+   inside a folder called `video-subtitler-main` containing **another** folder with the same name. Double-click into the inner one.
+
+9. **You should now see these files** (among others):
 
    ```
-   1
-   00:00:00,500 --> 00:00:03,200
-   Добар дан, ja сам Марко.
-
-   2
-   00:00:03,500 --> 00:00:07,000
-   Данас идемо да прочамо о Антибу.
+   setup.bat
+   ui.bat
+   run.bat
+   README.md
+   WINDOWS-SETUP.md
+   Makefile
+   src/
+   docs/
    ```
 
-   Read through. Fix any names, slang, or technical terms that the
-   computer misheard. **Don't change the timestamp lines** (the ones
-   with `-->`) — those tell the tool when each subtitle should
-   appear. Save the file (Ctrl+S).
-
-4. **Drag the same video onto `run.bat` again.** This time it
-   builds the final video with the subtitles burned in. About the
-   same speed as the video itself.
-
-5. When it's done, look for `<your-video>.subbed.mp4` next to the
-   original. **That's the file you upload to YouTube.**
-
-After step 5 you can disconnect from the internet. Everything from
-here on runs locally on your laptop.
+   If you see those — Step 3 is done. **Keep this File Explorer
+   window open** — you'll need it for the next step.
 
 ---
 
-## Manual path
+## Step 4 — Run the setup (the slow step)
 
-Follow this if the easy path didn't work, or if you'd rather install
-each piece yourself.
+This installs Python, ffmpeg, and downloads the 1.5 GB speech model.
+Allow **5–15 minutes** depending on your internet speed.
 
-### Download #1 — Python 3.13
+1. In the File Explorer window from Step 3, find **`setup.bat`**.
 
-> <https://www.python.org/downloads/windows/>
+2. **Double-click `setup.bat`**.
 
-Click **"Latest Python 3.13 Release"**, then on that page scroll
-down to **"Files"** and download:
+3. **Possible popup #1**: Windows might say *"Windows protected your
+   PC"* with a blue background. If you see it:
 
-> **Windows installer (64-bit)** — `python-3.13.X-amd64.exe`
+   - Click the small **"More info"** link.
+   - A new button appears: **"Run anyway"**. Click it.
 
-Run the downloaded `.exe`.
+4. A black window opens with a header that reads:
 
-⚠️ **On the first installer screen, tick the box that says "Add
-python.exe to PATH"** (bottom of the window). This is the most
-important step — without it, nothing else works.
+   ```
+   ============================================================
+     video-subtitler — first-time setup
+   ============================================================
+   ```
 
-Then click **Install Now** and wait.
+   It pauses and says **"Press any key to continue..."**. Press any
+   key (the spacebar is fine).
 
-To verify: press Windows key, type `cmd`, hit Enter. In the black
-window, type `python --version` and press Enter. You should see
-`Python 3.13.something`.
+5. The window prints progress lines like:
 
-### Download #2 — ffmpeg
+   - `==> Checking prerequisites`
+   - `==> Installing Python and ffmpeg`
+   - `==> Verifying ffmpeg has subtitle support`
+   - `==> Creating Python virtual environment`
+   - `==> Installing Python dependencies`
+   - `==> Downloading Whisper-medium speech model (~1.5 GB)`
 
-> <https://www.gyan.dev/ffmpeg/builds/>
+6. **Possible popup #2 and #3**: While installing Python and ffmpeg,
+   Windows may pop up a "User Account Control" prompt asking if you
+   want to allow changes to your device. **Click Yes** every time.
 
-Scroll down to **"release builds"** and download:
+7. **The slowest line is the model download.** The window will look
+   frozen for 5–15 minutes. **It's not frozen — it's downloading.** Don't close it. Don't press anything. Just wait.
 
-> **`ffmpeg-release-essentials.zip`**
+8. When everything is done you'll see this:
 
-(File size ~80 MB.)
+   ```
+   ============================================================
+     Setup complete. You can close this window.
 
-You need to extract this and put `ffmpeg.exe` somewhere on your PATH:
+     To subtitle a video: drag it onto run.bat
+   ============================================================
 
-1. Right-click the downloaded zip → **Extract All...** → extract to
-   `C:\` so you end up with a folder like
-   `C:\ffmpeg-7.X-essentials_build`.
-2. Rename that folder to just `C:\ffmpeg` (so the path is short and
-   memorable).
-3. Inside `C:\ffmpeg\bin` you should see `ffmpeg.exe`.
-4. Add `C:\ffmpeg\bin` to your `Path` environment variable:
-   - Press Windows key, type **"environment"**, click **"Edit the
-     system environment variables"**.
-   - Click **"Environment Variables..."** at the bottom.
-   - Under **"User variables for ..."**, find the variable named
-     `Path`, select it, click **Edit...**.
-   - Click **New**, paste `C:\ffmpeg\bin`, click **OK** on every
-     window.
+   Press any key to continue . . .
+   ```
 
-To verify: open a **new** Command Prompt window (any old ones won't
-see the change), type `ffmpeg -version` and press Enter. You should
-see ffmpeg's version banner.
+   Press any key to close the window. **Setup is done forever.**
 
-### Download #3 — the tool
-
-Same as the easy path:
-
-> <https://github.com/smarkovik/video-subtitler>
-
-Green **Code** button → **Download ZIP** → extract to your Desktop.
-
-### Run setup.bat
-
-Once Python and ffmpeg are both installed and on your PATH, you can
-still use `setup.bat` — it will see they're already installed,
-skip them, and just create the venv, install Python deps, and
-download the speech model.
-
-If `setup.bat` still fails for some reason, you can run setup
-yourself by opening Command Prompt **inside the project folder**
-(Shift + right-click in the folder → "Open in Terminal" or "Open
-PowerShell window here") and typing:
-
-```
-python -m venv .venv
-.venv\Scripts\python -m pip install --upgrade pip
-.venv\Scripts\python -m pip install -r requirements.txt
-set PYTHONPATH=src
-.venv\Scripts\python -m subtitler --download-model
-```
-
-The last command downloads the speech model and is the slow one.
-
-After that, `run.bat` works the same as in the easy path.
+If instead you see **"Setup failed"** — screenshot the window and
+message Tancho. Don't try to fix it yourself.
 
 ---
 
-## Troubleshooting
+## Step 5 — Open the tool for the first time
 
-**`setup.bat` opens and closes immediately.** It's pausing on a
-"press any key" line — the window is just hidden. Bring it forward
-or check the taskbar.
+1. In the same folder, find **`ui.bat`**. Double-click it.
 
-**"`python` is not recognized as an internal or external command."**
-You ran the manual installer but didn't tick "Add python.exe to
-PATH". Re-run the Python installer, choose **Modify**, and add it to
-PATH. Or uninstall and reinstall, this time ticking the box.
+2. A black window opens with:
 
-**"`ffmpeg is missing the subtitles filter`"** during setup. The
-ffmpeg you have installed was built without subtitle-rendering
-support (libass). Uninstall it (Settings → Apps), then run
-`setup.bat` again — it'll install the right one (`Gyan.FFmpeg`).
-Or use the manual path with `ffmpeg-release-essentials.zip` from
-gyan.dev, which includes libass.
+   ```
+   Starting the video-subtitler UI...
+   Your browser should open in a moment.
+   Leave this window open while you work. Close it to stop the server.
+   ```
 
-**Model download fails halfway.** Hugging Face occasionally
-rate-limits or your internet hiccups. Just run `setup.bat` again —
-it will resume from where it left off. The download is cached at
-`%USERPROFILE%\.cache\huggingface\hub`.
+3. After 2–3 seconds, **your default web browser opens automatically** to a page titled "video-subtitler" with a big dashed box that says **"Drop a video here"**.
 
-**Transcription runs but produces nonsense.** Double-check your
-video actually has audio and that someone is speaking Serbian. If
-the audio is very quiet or noisy, expect lower accuracy — that's
-why there's a review step.
+4. ⚠️ **Don't close the black window.** It's the running server. If
+   you close it, the page in the browser stops working.
 
-**Transcription is impossibly slow** (more than ~3× the video
-length). Either (a) your laptop is too old for the `medium` model —
-ask whoever sent you this tool to switch you to `small`, or (b) some
-other heavy program is running. Close other apps and try again.
+If your browser doesn't open by itself:
 
-**"`run.bat` says `.venv` is missing".** You haven't run `setup.bat`
-yet, or the venv folder got deleted. Run `setup.bat` again — it's
-safe to re-run.
+- Open your browser manually.
+- In the address bar, type: **`localhost:8765`** — press Enter.
+- The page should appear.
+
+---
+
+## Step 6 — Subtitle your first video
+
+The tool is now running. Here's how to use it.
+
+### 6a. Upload a video
+
+In the browser:
+
+1. Open another File Explorer window. Find a video you want to
+   subtitle (an `.mp4`, `.mov`, `.mkv`, or `.avi` file).
+2. **Drag the video file from File Explorer onto the dashed box** in the browser.
+3. The page changes to a "Transcribing..." view with a progress bar.
+
+### 6b. Wait for transcription
+
+- A progress bar fills up gradually.
+- Underneath it, you'll see segments of text appear as the computer
+  hears them.
+- **On a laptop, this takes roughly as long as the video itself.** A 5-minute video → about 5 minutes of waiting. A 30-minute video → about 30 minutes.
+- Don't close the black window or the browser tab.
+
+### 6c. Review the transcript
+
+When transcription finishes, the page changes to a **"Review the
+transcript"** view. You'll see one editable box per spoken segment.
+
+- **Read each line.** Look for:
+  - Names of people, places, or products (the computer mishears these often).
+  - Slang or unusual words.
+  - Numbers (it sometimes writes them out as letters).
+- **Click into a box and edit any line as needed.**
+- **Don't touch the timestamps on the left** (e.g. `0:14–0:17`). Those tell the tool when each subtitle should appear.
+
+### 6d. Choose a style (optional)
+
+Below the transcript there's a panel called **"Subtitle style"**. Click it to expand. You can change:
+
+- **Font**: Arial is the default and works everywhere. Try others if you like.
+- **Highlight colour**: the colour of the active word (yellow by default).
+- **Text colour**: the colour of the other words (white by default).
+- **Box opacity**: how solid the black background is, 0% to 100%.
+- **Position**: top / middle / bottom of the screen.
+- **Strip mode**: per-word boxes (default) vs one long strip across the whole width.
+- **Corner radius**: only matters when strip mode is on — rounds the strip corners.
+
+The little preview at the bottom of the panel shows roughly what
+the result will look like.
+
+### 6e. Render
+
+Click the orange **"Render video"** button.
+
+- A new progress bar appears.
+- This step burns the subtitles into the video. **Plan on roughly the same length as the video again.**
+
+### 6f. Download
+
+When rendering finishes, a green **"Download subtitled video"** button appears.
+
+- Click it. The finished video saves to your Downloads folder.
+- The filename ends with `.subbed.mp4`. **That's the file to upload to YouTube.**
+
+---
+
+## How to use the tool from now on
+
+Setup is one-time. Day to day:
+
+| What you want to do | How |
+|---|---|
+| Open the tool | Double-click `ui.bat`. Browser opens automatically. |
+| Subtitle a new video | Drop it onto the page in the browser. |
+| Stop the tool | Close the black window. |
+
+You **never** need to run `setup.bat` again — unless you accidentally delete the `.venv` folder, in which case run it once more.
+
+---
+
+## If something goes wrong
+
+**The black window flashed open and closed instantly.**
+The script paused waiting for a key press. The window might be
+hiding behind another one. Look for it on the taskbar.
+
+**`setup.bat` says "winget is missing".**
+Your Windows 10 is too old. Open the Microsoft Store, search for
+**"App Installer"** by Microsoft, and click **Get** / **Update**.
+Then run `setup.bat` again.
+
+Direct link: <https://apps.microsoft.com/detail/9NBLGGH4NNS1>
+
+**Setup got stuck for more than 30 minutes on the model download.**
+Kill it (close the window), reconnect to the internet if needed, and
+double-click `setup.bat` again. The download resumes from where it
+stopped — it doesn't restart from zero.
+
+**The browser opens but the page is blank or says "can't connect".**
+Wait 5 more seconds and refresh the page (F5). If still blank, close
+the black window and double-click `ui.bat` again.
+
+**The transcription is wildly wrong.**
+For names, slang, and technical terms — that's expected. That's why
+there's a review step. Edit the boxes and continue.
+
+**The transcription is wrong on most words, not just names.**
+The audio might be too quiet, too noisy, or in a language other
+than Serbian. Try a clip of clearer speech to confirm the tool is
+working.
+
+**It's been more than 3× the video length and transcription isn't
+done.**
+Your laptop is older than the tool can handle gracefully. Message
+Tancho — there's a smaller speech model that runs faster.
+
+**Anything else weird.**
+Screenshot the black window and message Tancho. Include what step
+you were on.
+
+---
+
+## Appendix — Manual install (only if `setup.bat` keeps failing)
+
+You should not need this. Try `setup.bat` first. This is a backup
+plan only.
+
+If `setup.bat` fails repeatedly, you can install the prerequisites
+yourself:
+
+1. **Python 3.13** from <https://www.python.org/downloads/windows/>.
+   Click "Latest Python 3.13 Release", scroll to "Files", download
+   "Windows installer (64-bit)". When you run the installer, **tick
+   the box "Add python.exe to PATH"** on the first screen — this is
+   critical.
+
+2. **ffmpeg** from <https://www.gyan.dev/ffmpeg/builds/>. Download
+   "ffmpeg-release-essentials.zip". Extract to `C:\ffmpeg`. Add
+   `C:\ffmpeg\bin` to your PATH (Start → "Edit the system
+   environment variables" → "Environment Variables..." → under "User
+   variables" find `Path` → "Edit..." → "New" → paste
+   `C:\ffmpeg\bin` → OK on every window).
+
+3. Re-run `setup.bat`. It will see Python and ffmpeg are already
+   installed, skip them, and just create the venv and download the
+   model.
