@@ -35,16 +35,21 @@ function Run-Native($block) {
     # Windows PowerShell 5.1 raises a NativeCommandError when a native
     # command emits anything to stderr while the strict preference is
     # active — even harmless warnings ("set HF_TOKEN", ffmpeg's
-    # version banner, pip deprecation notices, etc.). Wrapping the
-    # call here flips the preference locally so stderr is just
-    # printed, not promoted to a fatal error. Returns $LASTEXITCODE.
-    $prev = $ErrorActionPreference
-    $ErrorActionPreference = 'Continue'
+    # version banner, pip deprecation notices). Returns $LASTEXITCODE.
+    #
+    # Important: a scriptblock invoked via & runs in a new scope whose
+    # parent is the script scope, NOT this function's scope. Setting
+    # $ErrorActionPreference here as a local variable would be
+    # invisible to the block's variable lookup. We have to flip it in
+    # the script scope (which the block does walk through) and restore
+    # it in finally.
+    $prev = $script:ErrorActionPreference
+    $script:ErrorActionPreference = 'Continue'
     try {
         & $block
         return $LASTEXITCODE
     } finally {
-        $ErrorActionPreference = $prev
+        $script:ErrorActionPreference = $prev
     }
 }
 
