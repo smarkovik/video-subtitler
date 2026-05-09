@@ -28,6 +28,28 @@ function Has-Cmd($name) {
     $null -ne (Get-Command $name -ErrorAction SilentlyContinue)
 }
 
+function Find-Real-Python {
+    # Return the path to a *real* python.exe, or $null.
+    #
+    # Windows 10/11 ships with an "App Execution Alias" stub at
+    # %LOCALAPPDATA%\Microsoft\WindowsApps\python.exe (and python3.exe).
+    # The stub is on PATH by default and pretends Python is installed,
+    # but when you actually run it, it just prints "Python was not found"
+    # and offers to send you to the Microsoft Store. We have to skip
+    # past it to find a real Python.
+    $names = @('python', 'python3', 'py')
+    foreach ($name in $names) {
+        $candidates = @(Get-Command $name -All -ErrorAction SilentlyContinue)
+        foreach ($c in $candidates) {
+            $path = $c.Source
+            if ($path -and ($path -notlike '*\Microsoft\WindowsApps\*')) {
+                return $path
+            }
+        }
+    }
+    return $null
+}
+
 function Install-Via-Winget($displayName, $wingetId, $cmdToCheck) {
     if (Has-Cmd $cmdToCheck) {
         Ok "$displayName already installed ($(Get-Command $cmdToCheck | Select-Object -First 1 -ExpandProperty Source))"
@@ -61,19 +83,34 @@ Ok "winget found"
 
 Section "Installing Python and ffmpeg"
 
-Install-Via-Winget 'Python 3.13' 'Python.Python.3.13' 'python'
-Install-Via-Winget 'ffmpeg'      'Gyan.FFmpeg'        'ffmpeg'
-
-# Some winget Python installs land in a "py" launcher only — make sure
-# `python` itself works.
-if (-not (Has-Cmd 'python')) {
-    if (Has-Cmd 'py') {
-        Info "using 'py' launcher in place of 'python'"
-        Set-Alias -Name python -Value py -Scope Script
-    } else {
-        throw "Python installed but neither 'python' nor 'py' is on PATH."
+# Python: don't use Has-Cmd because the Windows Store python.exe stub
+# fakes the answer. Use Find-Real-Python instead.
+$realPython = Find-Real-Python
+if ($realPython) {
+    Ok "Python already installed ($realPython)"
+} else {
+    Info "installing Python 3.13 via winget (Python.Python.3.13)..."
+    winget install --id 'Python.Python.3.13' --silent --accept-package-agreements --accept-source-agreements --scope user 2>&1 | Out-Host
+    Refresh-Path
+    $realPython = Find-Real-Python
+    if (-not $realPython) {
+        Fail "Python installed but is still not reachable on PATH."
+        Write-Host ""
+        Write-Host "    Most common cause: a Windows Store stub is intercepting 'python'."
+        Write-Host "    To fix it:"
+        Write-Host ""
+        Write-Host "      1. Press Windows key, search for 'Manage app execution aliases'"
+        Write-Host "         and open it. (Settings > Apps > Advanced app settings >"
+        Write-Host "         App execution aliases on newer Windows.)"
+        Write-Host "      2. Turn OFF the toggles next to 'python.exe' and 'python3.exe'."
+        Write-Host "      3. Close this window and double-click setup.bat again."
+        Write-Host ""
+        exit 1
     }
+    Ok "Python installed ($realPython)"
 }
+
+Install-Via-Winget 'ffmpeg' 'Gyan.FFmpeg' 'ffmpeg'
 
 # --- Step 3: verify ffmpeg has libass ----------------------------------------
 
@@ -111,8 +148,11 @@ Ok "subtitles filter present"
 Section "Creating Python virtual environment"
 
 if (-not (Test-Path '.venv\Scripts\python.exe')) {
-    Info "creating .venv ..."
-    python -m venv .venv
+    Info "creating .venv with $realPython ..."
+    & $realPython -m venv .venv 2>&1 | Out-Host
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path '.venv\Scripts\python.exe')) {
+        throw "venv creation failed (exit $LASTEXITCODE). Check the messages above."
+    }
 } else {
     Ok ".venv already exists"
 }
