@@ -28,6 +28,26 @@ function Has-Cmd($name) {
     $null -ne (Get-Command $name -ErrorAction SilentlyContinue)
 }
 
+function Run-Native($block) {
+    # Run a native command (winget, ffmpeg, python, pip...) without
+    # tripping ErrorActionPreference='Stop' on stderr writes.
+    #
+    # Windows PowerShell 5.1 raises a NativeCommandError when a native
+    # command emits anything to stderr while the strict preference is
+    # active — even harmless warnings ("set HF_TOKEN", ffmpeg's
+    # version banner, pip deprecation notices, etc.). Wrapping the
+    # call here flips the preference locally so stderr is just
+    # printed, not promoted to a fatal error. Returns $LASTEXITCODE.
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $block
+        return $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prev
+    }
+}
+
 function Find-Real-Python {
     # Return the path to a *real* python.exe, or $null.
     #
@@ -56,7 +76,7 @@ function Install-Via-Winget($displayName, $wingetId, $cmdToCheck) {
         return
     }
     Info "installing $displayName via winget ($wingetId)..."
-    winget install --id $wingetId --silent --accept-package-agreements --accept-source-agreements --scope user 2>&1 | Out-Host
+    Run-Native { winget install --id $wingetId --silent --accept-package-agreements --accept-source-agreements --scope user 2>&1 | Out-Host } | Out-Null
     Refresh-Path
     if (-not (Has-Cmd $cmdToCheck)) {
         throw "$displayName installed but '$cmdToCheck' is still not on PATH. Try closing this window and double-clicking setup.bat again."
@@ -90,7 +110,7 @@ if ($realPython) {
     Ok "Python already installed ($realPython)"
 } else {
     Info "installing Python 3.13 via winget (Python.Python.3.13)..."
-    winget install --id 'Python.Python.3.13' --silent --accept-package-agreements --accept-source-agreements --scope user 2>&1 | Out-Host
+    Run-Native { winget install --id 'Python.Python.3.13' --silent --accept-package-agreements --accept-source-agreements --scope user 2>&1 | Out-Host } | Out-Null
     Refresh-Path
     $realPython = Find-Real-Python
     if (-not $realPython) {
@@ -116,19 +136,13 @@ Install-Via-Winget 'ffmpeg' 'Gyan.FFmpeg' 'ffmpeg'
 
 Section "Verifying ffmpeg has subtitle support"
 
-# ffmpeg writes its version banner to stderr (always), and Windows
-# PowerShell 5.1 turns any stderr from a native command into a
-# NativeCommandError when $ErrorActionPreference is 'Stop'. Merge
-# streams via 2>&1 and relax the preference locally so the call can
-# complete and we can actually inspect the filter list.
-$prevPref = $ErrorActionPreference
-$ErrorActionPreference = 'Continue'
-try {
-    $filters = (& ffmpeg -filters 2>&1) -join "`n"
-    $ffmpegRc = $LASTEXITCODE
-} finally {
-    $ErrorActionPreference = $prevPref
+# ffmpeg writes its version banner to stderr; Run-Native keeps that
+# from triggering NativeCommandError. Capture filter list as a string.
+$filters = ""
+$ffmpegRc = Run-Native {
+    $script:__filtersOut = (& ffmpeg -filters 2>&1) -join "`n"
 }
+$filters = $script:__filtersOut
 
 if ($ffmpegRc -ne 0) {
     Fail "ffmpeg failed to run (exit $ffmpegRc)."
@@ -149,9 +163,9 @@ Section "Creating Python virtual environment"
 
 if (-not (Test-Path '.venv\Scripts\python.exe')) {
     Info "creating .venv with $realPython ..."
-    & $realPython -m venv .venv 2>&1 | Out-Host
-    if ($LASTEXITCODE -ne 0 -or -not (Test-Path '.venv\Scripts\python.exe')) {
-        throw "venv creation failed (exit $LASTEXITCODE). Check the messages above."
+    $rc = Run-Native { & $realPython -m venv .venv 2>&1 | Out-Host }
+    if ($rc -ne 0 -or -not (Test-Path '.venv\Scripts\python.exe')) {
+        throw "venv creation failed (exit $rc). Check the messages above."
     }
 } else {
     Ok ".venv already exists"
@@ -163,11 +177,12 @@ $venvPython = Join-Path $PSScriptRoot '.venv\Scripts\python.exe'
 
 Section "Installing Python dependencies"
 
-& $venvPython -m pip install --upgrade pip 2>&1 | Out-Host
-& $venvPython -m pip install -r requirements.txt 2>&1 | Out-Host
-if ($LASTEXITCODE -ne 0) {
-    throw "pip install failed. Scroll up to see the error."
-}
+$rc = Run-Native { & $venvPython -m pip install --upgrade pip 2>&1 | Out-Host }
+if ($rc -ne 0) { throw "pip self-upgrade failed (exit $rc). Scroll up to see the error." }
+
+$rc = Run-Native { & $venvPython -m pip install -r requirements.txt 2>&1 | Out-Host }
+if ($rc -ne 0) { throw "pip install failed (exit $rc). Scroll up to see the error." }
+
 Ok "Python deps installed"
 
 # --- Step 6: download Whisper model ------------------------------------------
@@ -176,9 +191,9 @@ Section "Downloading Whisper-medium speech model (~1.5 GB)"
 Info "this only happens the first time. Grab a coffee."
 
 $env:PYTHONPATH = (Join-Path $PSScriptRoot 'src')
-& $venvPython -m subtitler --download-model 2>&1 | Out-Host
-if ($LASTEXITCODE -ne 0) {
-    throw "Model download failed. Check your internet connection and re-run setup.bat."
+$rc = Run-Native { & $venvPython -m subtitler --download-model 2>&1 | Out-Host }
+if ($rc -ne 0) {
+    throw "Model download failed (exit $rc). Check your internet connection and re-run setup.bat."
 }
 Ok "model cached"
 
