@@ -79,8 +79,26 @@ if (-not (Has-Cmd 'python')) {
 
 Section "Verifying ffmpeg has subtitle support"
 
-$filters = & ffmpeg -filters 2>$null
-if (-not ($filters | Select-String -Pattern '\bsubtitles\b')) {
+# ffmpeg writes its version banner to stderr (always), and Windows
+# PowerShell 5.1 turns any stderr from a native command into a
+# NativeCommandError when $ErrorActionPreference is 'Stop'. Merge
+# streams via 2>&1 and relax the preference locally so the call can
+# complete and we can actually inspect the filter list.
+$prevPref = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+try {
+    $filters = (& ffmpeg -filters 2>&1) -join "`n"
+    $ffmpegRc = $LASTEXITCODE
+} finally {
+    $ErrorActionPreference = $prevPref
+}
+
+if ($ffmpegRc -ne 0) {
+    Fail "ffmpeg failed to run (exit $ffmpegRc)."
+    Write-Host "    Try opening a new terminal and running 'ffmpeg -version' manually."
+    exit 1
+}
+if (-not ($filters -match '\bsubtitles\b')) {
     Fail "ffmpeg is missing the 'subtitles' filter (libass)."
     Write-Host "    The Gyan.FFmpeg build normally includes it. Try uninstalling"
     Write-Host "    ffmpeg ('winget uninstall Gyan.FFmpeg') and re-running setup.bat."
