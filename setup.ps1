@@ -202,5 +202,5 @@ Ok "model cached"
 Write-Host ""
 Write-Host "All done." -ForegroundColor Green
 Write-Host ""
-Write-Host "Drop a video onto run.bat to subtitle it."
+Write-Host "Double-click ui.bat to open the tool in your browser."
 exit 0

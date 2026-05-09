@@ -19,7 +19,7 @@ echo     * ffmpeg              (if missing)
 echo     * the Whisper speech-recognition model (~1.5 GB, one-time)
 echo.
 echo   You only need to do this once. After it finishes you can
-echo   subtitle videos by dragging them onto run.bat.
+echo   open the tool by double-clicking ui.bat.
 echo.
 echo   You may see a Windows popup asking permission to install
 echo   software — click Yes.
@@ -34,7 +34,7 @@ if "%RC%"=="0" (
     echo  ============================================================
     echo    Setup complete. You can close this window.
     echo.
-    echo    To subtitle a video: drag it onto run.bat
+    echo    To open the tool: double-click ui.bat
     echo  ============================================================
 ) else (
     echo  ============================================================
