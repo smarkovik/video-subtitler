@@ -298,6 +298,25 @@ details.settings .grid {
 
 .field.disabled { opacity: 0.45; pointer-events: none; }
 
+.alphabet-bar {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  font-size: 13px;
+  color: var(--muted);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.alphabet-bar label {
+  cursor: pointer;
+  color: var(--text);
+  user-select: none;
+}
+.alphabet-bar input { margin-right: 4px; vertical-align: middle; }
+
 .opts {
   margin: 16px 0 20px;
   font-size: 13px;

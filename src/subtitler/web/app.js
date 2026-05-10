@@ -1,5 +1,59 @@
 "use strict";
 
+// ---------- transliteration: Serbian Cyrillic <-> Latin ---------------------
+//
+// Whisper-medium outputs Serbian in Cyrillic. Most users prefer reading
+// (and editing) in Latin, so the editor transliterates by default.
+// Whatever's in the textareas at render time is what gets burned in,
+// so toggling here changes the final video.
+
+const CYR_TO_LAT = {
+  "А":"A","Б":"B","В":"V","Г":"G","Д":"D","Ђ":"Đ","Е":"E","Ж":"Ž","З":"Z",
+  "И":"I","Ј":"J","К":"K","Л":"L","Љ":"Lj","М":"M","Н":"N","Њ":"Nj","О":"O",
+  "П":"P","Р":"R","С":"S","Т":"T","Ћ":"Ć","У":"U","Ф":"F","Х":"H","Ц":"C",
+  "Ч":"Č","Џ":"Dž","Ш":"Š",
+  "а":"a","б":"b","в":"v","г":"g","д":"d","ђ":"đ","е":"e","ж":"ž","з":"z",
+  "и":"i","ј":"j","к":"k","л":"l","љ":"lj","м":"m","н":"n","њ":"nj","о":"o",
+  "п":"p","р":"r","с":"s","т":"t","ћ":"ć","у":"u","ф":"f","х":"h","ц":"c",
+  "ч":"č","џ":"dž","ш":"š",
+};
+
+// Latin -> Cyrillic. Digraphs (lj, nj, dž) match before single letters.
+const LAT_DIGRAPHS = [
+  ["LJ","Љ"],["Lj","Љ"],["lj","љ"],
+  ["NJ","Њ"],["Nj","Њ"],["nj","њ"],
+  ["DŽ","Џ"],["Dž","Џ"],["dž","џ"],
+];
+const LAT_SINGLE = (() => {
+  const m = {};
+  for (const [c, l] of Object.entries(CYR_TO_LAT)) {
+    if (l.length === 1) m[l] = c;
+  }
+  return m;
+})();
+
+function cyrillicToLatin(text) {
+  let out = "";
+  for (const ch of text) out += CYR_TO_LAT[ch] ?? ch;
+  return out;
+}
+
+function latinToCyrillic(text) {
+  let out = "";
+  let i = 0;
+  while (i < text.length) {
+    const two = text.slice(i, i + 2);
+    let matched = null;
+    for (const [src, dst] of LAT_DIGRAPHS) {
+      if (two === src) { matched = dst; break; }
+    }
+    if (matched) { out += matched; i += 2; continue; }
+    out += LAT_SINGLE[text[i]] ?? text[i];
+    i += 1;
+  }
+  return out;
+}
+
 // ---------- helpers ----------------------------------------------------------
 
 const $ = (id) => document.getElementById(id);
@@ -32,6 +86,7 @@ function autosize(ta) {
 
 let jobId = null;
 const segments = [];   // grows as transcribe events arrive
+let alphabet = "latin";  // "latin" | "cyrillic" — Latin by default
 
 // ---------- upload + drag-drop ----------------------------------------------
 
@@ -148,7 +203,7 @@ function showEditor() {
     ts.textContent = `${fmtTime(seg.start)}–${fmtTime(seg.end)}`;
 
     const ta = document.createElement("textarea");
-    ta.value = seg.text;
+    ta.value = alphabet === "latin" ? cyrillicToLatin(seg.text) : seg.text;
     ta.dataset.idx = idx;
     ta.rows = 1;
     ta.spellcheck = false;
@@ -218,6 +273,22 @@ function syncPreview() {
   "opt-position", "opt-fullstrip", "opt-radius",
 ].forEach(id => $(id).addEventListener("input", syncPreview));
 $("opt-fullstrip").addEventListener("change", syncPreview);
+
+// Alphabet toggle: convert what's currently in the textareas to the
+// chosen script. Mixed-script input is preserved — chars that don't
+// belong to the source map are passed through unchanged.
+document.querySelectorAll('input[name="alphabet"]').forEach(radio => {
+  radio.addEventListener("change", e => {
+    const next = e.target.value;
+    if (next === alphabet) return;
+    const fn = next === "latin" ? cyrillicToLatin : latinToCyrillic;
+    document.querySelectorAll("#segments textarea").forEach(ta => {
+      ta.value = fn(ta.value);
+      autosize(ta);
+    });
+    alphabet = next;
+  });
+});
 
 $("btn-render").addEventListener("click", startRender);
 $("btn-rerender").addEventListener("click", () => showStage("edit"));
