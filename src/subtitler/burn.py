@@ -47,7 +47,14 @@ def burn(
         "-c:v", "libx264",
         "-preset", "medium",
         "-crf", "20",
-        "-c:a", "copy",
+        # Re-encode audio to AAC instead of copying. Sources from
+        # DaVinci Resolve (and other prosumer NLEs) carry 24-bit
+        # linear PCM, which when copied into an .mp4 container
+        # becomes 'ipcm' — Windows Media Player and many phones
+        # refuse to play it. AAC at 192kbps is universally supported
+        # and indistinguishable from PCM for spoken-word video.
+        "-c:a", "aac",
+        "-b:a", "192k",
         str(out.resolve()),
     ]
 
